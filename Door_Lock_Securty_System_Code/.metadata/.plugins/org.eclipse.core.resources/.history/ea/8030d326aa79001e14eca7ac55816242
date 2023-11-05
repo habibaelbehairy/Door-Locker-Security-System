@@ -1,0 +1,31 @@
+/*
+ * Buzzer.c
+ *
+ *  Created on: Nov 2, 2023
+ *      Author: habib
+ */
+
+
+#include "buzzer.h"
+
+#define BUZZER_PORT PORTC_ID
+#define BUZZER_PIN PIN4_ID
+
+void Buzzer_init(){
+	/*
+	 * set up pin direction of the buzzer
+	 * set it off initially
+	*/
+	GPIO_setupPinDirection(BUZZER_PORT, BUZZER_PIN, PIN_OUTPUT);
+	GPIO_writePin(BUZZER_PORT, BUZZER_PIN, LOGIC_LOW);
+
+}
+void Buzzer_on(void){
+	/*Turn on the Buzzer*/
+	GPIO_writePin(BUZZER_PORT, BUZZER_PIN, LOGIC_HIGH);
+}
+void Buzzer_off(void){
+	/*Turn off the Buzzer*/
+	GPIO_writePin(BUZZER_PORT, BUZZER_PIN, LOGIC_LOW);
+
+}

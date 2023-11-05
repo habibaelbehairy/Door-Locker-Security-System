@@ -1,0 +1,66 @@
+/******************************************************************************
+ *
+ * Module: Timer1
+ *
+ * File Name: Timer1.c
+ *
+ * Description: Source file for the Timer1 AVR driver
+ *
+ * Author: Habiba Elbehairy
+ *
+ *******************************************************************************/
+#include "timer1.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+
+
+/*******************************************************************************
+ *                           Global Variables                                  *
+ *******************************************************************************/
+
+ISR(TIMER1_OVF_vect){
+
+}
+ISR(TIMER1_COMPA_vect){
+
+}
+ISR(TIMER1_COMPB_vect){
+
+}
+void Timer1_init(const Timer1_ConfigType * Config_Ptr){
+	TCNT1 = Config_Ptr->initial_value;
+
+	TCCR1A = (TCCR1B&0xFC) |(Config_Ptr->mode);
+	TCCR1B = (TCCR1B&0xE7) |(Config_Ptr->mode<<3);
+
+	TCCR1B = (TCCR1B&0xFC) |(Config_Ptr-> prescaler);
+
+#if (PWM == FALSE)
+	/* non pwm mode*/
+	TCCR1A = (1<<FOC1A);
+	TCCR1A = (1<<FOC1B);
+#endif
+
+	if (Config_Ptr->mode==CTC){
+		#if (CTC_MODE == CTC_A)
+		OCR1A=Config_Ptr->compare_value;
+		/*Enable Timer1 Compare A Interrupt*/
+		TIMSK |= (1<<OCIE1A);
+		#endif
+
+		#if (CTC_MODE == CTC_B)
+		OCR1B=Config_Ptr->compare_value;
+		/*Enable Timer1 Compare A Interrupt*/
+		TIMSK |= (1<<OCIE1B);
+		#endif
+	}
+	else if(Config_Ptr->mode==NORMAL){
+		TIMSK|=(1<< TOIE1);
+	}
+}
+
+void Timer1_deInit(void){}
+void Timer1_setCallBack(void(*a_ptr)(void)){}
+
+

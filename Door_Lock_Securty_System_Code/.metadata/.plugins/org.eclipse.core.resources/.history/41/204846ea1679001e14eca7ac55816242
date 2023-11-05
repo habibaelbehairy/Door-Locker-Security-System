@@ -1,0 +1,36 @@
+/******************************************************************************
+ *
+ * Module: Timer1
+ *
+ * File Name: Timer1.c
+ *
+ * Description: Source file for the Timer1 AVR driver
+ *
+ * Author: Habiba Elbehairy
+ *
+ *******************************************************************************/
+#include "timer1.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+
+
+/*******************************************************************************
+ *                           Global Variables                                  *
+ *******************************************************************************/
+
+ISR(TIMER1_COMPA_vect){
+
+}
+ISR(TIMER1_OVF_vect){
+
+}
+
+void Timer1_init(const Timer1_ConfigType * Config_Ptr){
+	TCNT1 = 0;
+
+}
+void Timer1_deInit(void){}
+void Timer1_setCallBack(void(*a_ptr)(void)){}
+
+

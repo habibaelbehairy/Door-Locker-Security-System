@@ -1,0 +1,538 @@
+/*/*******************************************************************************
+ *
+ *  module: HMI_ECU
+ *
+ *  file name: HMI_Main.c
+ *
+ *  Description: source file for the HMI_ECU micro-controller
+ *
+ *  Author: Habiba Elbehairy
+ *
+ *******************************************************************************/
+
+#include"lcd.h"
+#include"keypad.h"
+#include"uart.h"
+#include"timer1.h"
+#include<avr/io.h>
+#include <util/delay.h>
+#include "common_macros.h"
+
+/*******************************************************************************
+ *                                  Definitions                                *
+ *******************************************************************************/
+
+#define MC1_READY 			0x10
+#define MC2_READY 			0x20
+#define CHANGE_PASSWORD 	0xA0
+#define SAVE 				0xA1
+#define END_SAVING 			0xA2
+#define CHECK_PASSWORD 		0xA3
+#define UNLOCK_DOOR 		0xA4
+#define OPEN_BUZZER			0XA5
+#define PASSWORD 			0xA6
+#define PASSWORD_MATCH		0xA7
+#define PASSWORD_DOESNT_MATCH 0xA8
+#define PASSWORD_ADDRESS	0x70
+
+
+/*******************************************************************************
+ *                           Global Variables                                  *
+ *******************************************************************************/
+/*
+ * variable to cout the seconds in
+ * the call back function of timer 1
+ */
+volatile uint8 g_countSeconds = 0;
+/*
+ * variable to store status of password match or not
+ */
+uint8 g_passFLag =0;
+/* Description:
+ * TIMER1 configurations:
+ *		initial_value = 0,
+ *		compare_value = 31250 ticks per 1 second,
+ *		pre-scaler = 256
+ *		CTC mode of operation
+ */
+Timer1_ConfigType Timer1_Configuration = {0,TICKS_PER_ONE_SECOND,F_CPU_256,CTC};
+
+/*******************************************************************************
+ *                              Functions Prototypes                           *
+ *******************************************************************************/
+void New_Password(void);
+void CHECK_Password(void);
+void DoorLCD();
+void BuzzerLCD();
+void Timer1_CallBackFun(void);
+
+/*******************************************************************************
+ *                              Functions Implementation                        *
+ *******************************************************************************/
+
+/*
+ * Description:
+ * Call back Fun for timer 1
+ */
+void Timer1_CallBackFun(void){
+	g_countSeconds++;
+}
+
+/*
+ * Description:
+ * Function to write new password and check for confirmation of the re-password then
+ * send it to MC2 to save it in EEPROM
+ */ 
+void New_Password(void) {
+	/*
+	 * pass_Counter to count the number of digits entered
+	 * key to store the pressed key
+	 * password to store the password
+	 * re_password to store the re-entered password
+	 * match to check if the password and re_password are matched
+	*/
+    uint8 pass_Counter = 0;
+    uint8 key = 0;
+    uint8 password[5];
+    uint8 re_password[5];
+    uint8 match = 1;
+	/*
+	 * display a message to the user to enter the password
+	*/
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Lets Create");
+    LCD_displayStringRowColumn(1, 0, "New Password ");
+    _delay_ms(1000);
+
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Plz Enter Pass:");
+    LCD_moveCursor(1,0);
+	/*
+	 * loop to get the new password from the user
+	 */
+
+    while (pass_Counter < 5) {
+        key = KEYPAD_getPressedKey();
+    	_delay_ms(10);
+    	while(!((key >= 0) && (key <= 9)))
+    	{
+    	 key = KEYPAD_getPressedKey();
+    		_delay_ms(10);
+    	}
+        LCD_displayStringRowColumn(1, pass_Counter, "*");
+    	_delay_ms(500);
+    	/*
+    	 * store entered key to compare it with repassword
+    	 */
+        password[pass_Counter] = key;
+        pass_Counter++;
+    }
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Press = to ");
+    LCD_displayStringRowColumn(1, 0, "save password");
+    key = KEYPAD_getPressedKey();
+    LCD_clearScreen();
+    while(key!='=')
+    {	/*
+		* display a message to the user to press = to save the password
+		*/
+        LCD_displayStringRowColumn(0, 0, "Press = to ");
+        LCD_displayStringRowColumn(1, 0, "save password");
+    	key=KEYPAD_getPressedKey();
+    	_delay_ms(50);
+    }
+	/*
+	 * display a message to the user to re-enter the password
+	*/
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Re-enter Pass:");
+    LCD_moveCursor(1,0);
+	/*
+	 * loop to get the re-entered password from the user
+	*/
+    pass_Counter = 0;
+    while (pass_Counter < 5) {
+        key = KEYPAD_getPressedKey();
+    	_delay_ms(10);
+    	while(!((key >= 0) && (key <= 9)))
+    	{
+    	   key = KEYPAD_getPressedKey();
+    	    _delay_ms(10);
+    	  }
+    	LCD_displayStringRowColumn(1, pass_Counter, "*");
+    	_delay_ms(500);
+    	/*
+         * store entered key to compare it with password
+         */
+        re_password[pass_Counter] = key;
+        pass_Counter++;
+     }
+     LCD_clearScreen();
+     LCD_displayStringRowColumn(0, 0, "Press = to ");
+     LCD_displayStringRowColumn(1, 0, "save password");
+    key = KEYPAD_getPressedKey();
+      while(key!='=')
+      {
+		/*
+		* display a message to the user to press = to save the password
+		*/
+        LCD_clearScreen();
+        LCD_displayStringRowColumn(0, 0, "Press = to ");
+        LCD_displayStringRowColumn(1, 0, "save pass");
+      	key=KEYPAD_getPressedKey();
+      	_delay_ms(50);
+      }
+	/*
+	* loop to check if the password and re_password are matched
+	*/
+    for (pass_Counter=0;pass_Counter<5;pass_Counter++) {
+         if (password[pass_Counter] != re_password[pass_Counter]) {
+             match = 0;
+             break;
+         }
+     }
+	 /*
+	 * if the password and re_password are matched send the password to MC2 to save it in EEPROM
+	 */
+    if (match) {
+		/*
+		* send the save command to MC2
+		*/
+       UART_sendByte(SAVE);
+       _delay_ms(10);
+	   /*
+	   * send the password digit by digit to MC2
+	   */
+       for(pass_Counter=0;pass_Counter<5;pass_Counter++){
+		/*
+		* wait until MC2 is ready to receive the password
+		*/
+        	while(UART_recieveByte()!= MC2_READY);
+		/*
+		* send the password digit by digit
+		*/
+        	UART_sendByte(password[pass_Counter]);
+        }
+		/*
+		* wait until MC2 send END_SAVING command
+		*/
+        while(UART_recieveByte()!= END_SAVING);
+        LCD_clearScreen();
+        LCD_displayStringRowColumn(0,0,"Password Saved");
+        _delay_ms(500);
+      }
+	  /*
+	   * if the password and re_password are not matched display a message 
+	   * to the user that the password doesn't match
+	   * 
+	   */
+    else{
+		/*
+		* display a message to the user that the password doesn't match
+		*/
+        LCD_clearScreen();
+        LCD_displayStringRowColumn(0,0,"Password doesn't");
+        LCD_displayStringRowColumn(1,0,"match");
+        _delay_ms(500);
+        LCD_clearScreen();
+        LCD_displayStringRowColumn(0,0,"Try Again");
+        _delay_ms(500);
+        New_Password();
+        }
+}
+
+/*
+ * Description:
+ * Function to check the password from HMI with the saved password in EEPROM
+ * if the password is correct prints a message to the user that the password is correct
+ * else prints a message to the user that the password is wrong
+ */
+
+void CHECK_Password(void) {
+	/*
+	 * pass_Counter to count the number of digits entered
+	 * key to store the pressed key
+	 * password to store the password
+	 * error to count num of pasword entered wrong
+	 * response to store the recive message from ELC
+	*/
+    uint8 pass_Counter = 0;
+    uint8 key = 0;
+    uint8 error = 0;
+    uint8 response;
+    uint8 password[5];
+
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Plz Enter door");
+    LCD_displayStringRowColumn(1, 0, "pass:");
+	/*
+	 * loop to get the password from the user
+	 */
+    while (pass_Counter < 5) {
+        key = KEYPAD_getPressedKey();
+        _delay_ms(10);
+        while (!((key >= 0) && (key <= 9))) {
+            key = KEYPAD_getPressedKey();
+            _delay_ms(10);
+        }
+        /*
+         * Store the entered key in the password array
+         */
+        password[pass_Counter] = key;
+        /*
+         * pass_Counter+5 position in lcd
+         * */
+        LCD_displayStringRowColumn(1, pass_Counter+5, "*");
+        _delay_ms(500);
+        pass_Counter++;
+    }
+    LCD_clearScreen();
+    LCD_displayStringRowColumn(0, 0, "Press = to ");
+    LCD_displayStringRowColumn(1, 0, "enter pass");
+
+    while (KEYPAD_getPressedKey() != '=') {
+        LCD_clearScreen();
+        key = KEYPAD_getPressedKey();
+        _delay_ms(500);
+    }
+    /*
+     * send pass to ELU to compare it with
+     * password in EEROM
+     */
+    UART_sendByte(CHECK_PASSWORD);
+    _delay_ms(10);
+
+    for (pass_Counter = 0; pass_Counter < 5; pass_Counter++) {
+        /*
+         *  Wait until MC2 is ready to receive the password
+         */
+        while (UART_recieveByte() != MC2_READY) {
+        }
+        UART_sendByte(password[pass_Counter]);
+        response = UART_recieveByte();
+        if (response == PASSWORD_DOESNT_MATCH) {
+            error++;
+        }
+    }
+
+    if (error != 0) {
+    	_delay_ms(500);
+    }
+     else {
+        LCD_clearScreen();
+        LCD_displayStringRowColumn(0, 0, "Password correct");
+        _delay_ms(1000);
+
+    }
+    /*
+     * store response
+     */
+    g_passFLag=response;
+}
+
+/*
+ * Description:
+ * Function to write door status on screen
+ */
+void DoorLCD(void){
+	Timer1_init(&Timer1_Configuration);
+	Timer1_setCallBack(Timer1_CallBackFun);
+	LCD_clearScreen();
+	/*
+	 * display a message to the user that the door in unlocking
+	 */
+	LCD_displayStringRowColumn(0, 0, "Door is");
+	LCD_displayStringRowColumn(1, 0, "Unlocking..");
+
+	g_countSeconds = 0;
+	/*
+	 * wait for 15 seconds
+	 */
+	while (g_countSeconds != 15) {
+	}
+	/*
+	 * display a message to the user that the door is on hold
+	 */
+	LCD_clearScreen();
+	LCD_displayStringRowColumn(0, 0, "Door is");
+	LCD_displayStringRowColumn(1, 0, "on hold");
+	g_countSeconds = 0;
+	while (g_countSeconds != 3) {
+	}
+	LCD_clearScreen();
+	/*
+	 * display a message to the user that the door in locking
+	 */
+	LCD_displayStringRowColumn(0, 0, "Door is");
+	LCD_displayStringRowColumn(1, 0, "locking..");
+	g_countSeconds = 0;
+	while (g_countSeconds != 15) {
+	}
+	/*
+	 * turn off the timer
+	 */
+	Timer1_deInit();
+	g_countSeconds = 0;
+	/*
+	 * display a message to the user that the door is locked
+	 */
+	LCD_clearScreen();
+	LCD_displayStringRowColumn(0, 0, "Door is locked");
+	_delay_ms(500);
+
+}
+
+/*
+ * Description:
+ * Function to write error message after password entered 3 times wrong
+ */
+void BuzzerLCD(void) {
+	LCD_clearScreen();
+	/*
+	 * display error message
+	 */
+	LCD_displayStringRowColumn(0, 0, "Pass Entered");
+	LCD_displayStringRowColumn(1, 0, "3 times wrong!");
+	/*
+	 * start the timer and count 60 sec
+	 */
+	Timer1_init(&Timer1_Configuration);
+	Timer1_setCallBack(Timer1_CallBackFun);
+	g_countSeconds = 0;
+	/*
+	 * display ERROR message for 60 sec
+	 */
+	while (g_countSeconds != 60) {
+	}
+	g_countSeconds = 0;
+	/*
+	 * stop the timer
+	 */
+	Timer1_deInit();
+}
+
+
+int main(){
+	/*
+	 * Enable interrupts register
+	 */
+	SREG |= (1 << 7);
+	/*
+	 * try to count number of tries user takes to enter password
+	 */
+	uint8 try;
+	uint8 key=0;
+
+	/*
+	 * UART configurations:
+	 * 		8-bit data mode
+	 * 		disable parity checking
+	 *		one bit for stop bit
+	 *		baud rate = 9600,
+	 *		peed double speed
+	 */
+	UART_ConfigType UART_Configuration= {UART_8_BIT_DATA,DISABLED,ONE_BIT,UART_BAUD_RATE_9600,DOUBLE_SPEED};
+
+	/*
+	 * init lcd
+	 */
+	LCD_init();
+	/*
+	 * init Uart
+	 */
+	UART_init(&UART_Configuration);
+	/*
+	 * Send byte to MC2 to inform him that MC1 is ready
+	 */
+	UART_sendByte(MC1_READY);
+	/*
+	 * init Timer1
+	 */
+	Timer1_init(&Timer1_Configuration);
+	/*
+	 * set call back for timer 1
+	 */
+	Timer1_setCallBack(Timer1_CallBackFun);
+
+
+	LCD_displayStringRowColumn(0, 0, "Welcome to our");
+	LCD_displayStringRowColumn(1, 0, "door lock system");
+	_delay_ms(1000);
+
+	/*
+	 * create password for the door for first time
+	 */
+	New_Password();
+
+
+	while(1){
+		LCD_clearScreen();
+		LCD_displayStringRowColumn(0, 0, "+: Open Door");
+		LCD_displayStringRowColumn(1, 0, "-: Change pass");
+		_delay_ms(500);
+		while (1) {
+			key = KEYPAD_getPressedKey();
+			if (key == '+' || key == '-')
+				break;
+		}
+		LCD_clearScreen();
+
+		for (try = 0; try < 3; try++) {
+			/*
+			 * send to Control_ECU PASSWORD command to
+			 * check if it match to the password in EEROM
+			 * or not
+			 */
+			UART_sendByte(PASSWORD);
+			LCD_moveCursor(1, 6);
+			CHECK_Password();
+			/*
+			 * if the password is right break the loop
+			 */
+			if (g_passFLag == PASSWORD_MATCH) {
+				break;
+			};
+			LCD_clearScreen();
+			LCD_displayStringRowColumn(0, 0, "WRONG PASSWORD");
+			_delay_ms(1000);
+
+		}
+		/*
+		 * if the password doesn't match for 3 times
+		 * send to mc2 OPEN_BUZZER byte to open buzzer
+		*/
+		if (g_passFLag == PASSWORD_DOESNT_MATCH) {
+				UART_sendByte(OPEN_BUZZER);
+				BuzzerLCD();
+		}
+		/*
+		 * if the password match
+		 * check for user choice
+		*/
+		else if(g_passFLag == PASSWORD_MATCH){
+			/*
+			 * if the user choose + open door
+			 * send to mc2 UNLOCK_DOOR byte to open door
+			*/
+			if(key=='+'){
+				UART_sendByte(UNLOCK_DOOR);
+				DoorLCD();
+			}
+			/*
+			 * if the user choose + open door
+			 * send to mc2 HANGE_PASSWORD byte to change password
+			 * of the door
+			*/
+			else if(key=='-')
+			{
+				UART_sendByte(CHANGE_PASSWORD);
+				New_Password();
+			}
+		}
+	}
+}
+
+
+
+
+

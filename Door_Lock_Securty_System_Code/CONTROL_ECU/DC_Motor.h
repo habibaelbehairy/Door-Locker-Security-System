@@ -1,0 +1,62 @@
+ /******************************************************************************
+ *
+ * Module: DC Motor
+ *
+ * File Name:DC_Motor.h
+ *
+ * Description: Header file for the Dc Motor driver
+ *
+ * Author: Habiba Elbehairy
+ *
+ *******************************************************************************/
+#ifndef DC_MOTOR_H_
+#define DC_MOTOR_H_
+#include "std_types.h"
+#include "gpio.h"
+
+
+/*******************************************************************************
+ *                                Definitions                                  *
+ *******************************************************************************/
+#define DC_MOTOR_PORT_ID                PORTB_ID
+#define IN1_PIN_ID                  	PIN0_ID
+#define IN2_PIN_ID      				PIN1_ID
+
+/*******************************************************************************
+ *                         Types Declaration                                   *
+ *******************************************************************************/
+
+/*
+ * Description :
+ * enum responsible for DCMotor state.
+ */
+
+typedef enum{
+	STOP,CLOCKWISE,ANTI_CLOCKWISE
+}DcMotor_State;
+
+
+/*******************************************************************************
+ *                      Functions Prototypes                                   *
+ *******************************************************************************/
+/*
+ * Function Name : DcMotor_Init
+ * Description : Function responsible for setup the direction for the two motor pins through the GPIO driver
+ * Parameters : void.
+ * Return : void.
+ */
+void DcMotor_Init(void);
+
+
+/*
+ * Function Name : DcMotor_Rotate
+ * Description : The function responsible for rotate the DC Motor CW/ or A-CW or
+ *  			 stop the motor based on the state input state value.
+ * Parameters : DcMotor_State: state of the Motor (STOP,CW,A-CW), Speed : speed of the motor.
+ * Return : void.
+ */
+void DcMotor_Rotate(DcMotor_State state,uint8 speed);
+
+
+
+#endif /* DC_MOTOR_H_ */

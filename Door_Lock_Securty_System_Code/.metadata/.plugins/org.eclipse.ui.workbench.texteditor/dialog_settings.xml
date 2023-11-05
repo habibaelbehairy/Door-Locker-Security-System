@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
+		<item key="selection" value="MC1"/>
+		<item key="wrap" value="true"/>
+		<item key="casesensitive" value="false"/>
+		<item key="wholeword" value="false"/>
+		<item key="incremental" value="false"/>
+		<item key="isRegEx" value="false"/>
+		<list key="findhistory">
+			<item value="MC1"/>
+			<item value="g_passFLag"/>
+			<item value="global_error_counter"/>
+			<item value="Doored"/>
+			<item value="doored"/>
+			<item value="UART_receiveByte"/>
+			<item value="g_reciveByte"/>
+			<item value="CHANGE_PASSWORD"/>
+			<item value="verify"/>
+			<item value="CHECK_Password"/>
+			<item value="New_Pass"/>
+			<item value="Check_passwordCLU"/>
+			<item value="CONTINUE_password"/>
+			<item value="Error_password"/>
+			<item value="CHECK_password"/>
+		</list>
+		<list key="replacehistory">
+			<item value="g_recieveByte"/>
+			<item value="Check_Password"/>
+			<item value="Check_PasswordCLU"/>
+			<item value="CONTINUE_PASSWORD"/>
+			<item value="ERROR_PASSWORD"/>
+			<item value="CHECK_PASSWORD"/>
+			<item value="pass_Counter"/>
+			<item value="password"/>
+			<item value="re_password"/>
+		</list>
+	</section>
+	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="1342"/>
+		<item key="DIALOG_Y_ORIGIN" value="162"/>
+		<item key="DIALOG_WIDTH" value="414"/>
+		<item key="DIALOG_HEIGHT" value="454"/>
+		<item key="DIALOG_FONT_NAME" value="1|Segoe UI|9.0|0|WINDOWS|1|-15|0|0|0|400|0|0|0|1|0|0|0|0|Segoe UI"/>
+	</section>
+	<section name="org.eclipse.ui.texteditor.GotoLineAction$GotoLineDialog_dialogBounds">
+		<item key="DIALOG_X_ORIGIN" value="646"/>
+		<item key="DIALOG_Y_ORIGIN" value="349"/>
+	</section>
+</section>

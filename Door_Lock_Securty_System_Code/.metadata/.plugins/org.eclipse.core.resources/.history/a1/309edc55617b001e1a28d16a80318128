@@ -1,0 +1,119 @@
+/******************************************************************************
+ *
+ * Module: Timer1
+ *
+ * File Name: Timer1.c
+ *
+ * Description: Source file for the Timer1 AVR driver
+ *
+ * Author: Habiba Elbehairy
+ *
+ *******************************************************************************/
+#include "timer1.h"
+#include <avr/io.h>
+#include <avr/interrupt.h>
+
+
+
+/*******************************************************************************
+ *                           Global Variables                                  *
+ *******************************************************************************/
+static volatile void (*g_callBackPtr)(void) = NULL_PTR;
+
+
+
+
+/*******************************************************************************
+ *                       Interrupt Service Routines                            *
+ *******************************************************************************/
+
+/* Interrupt Service Routine for timer1 Overflow mode */
+ISR(TIMER1_OVF_vect){
+	if(g_callBackPtr != NULL_PTR)
+	{
+		/* Call the Call Back function in the application after the edge is detected */
+		(*g_callBackPtr)(); /* another method to call the function using pointer to function g_callBackPtr(); */
+	}
+}
+
+/* Interrupt Service Routine for timer1 compare mode */
+ISR(TIMER1_COMPA_vect){
+	if(g_callBackPtr != NULL_PTR)
+	{
+		/* Call the Call Back function in the application after the edge is detected */
+		(*g_callBackPtr)(); /* another method to call the function using pointer to function g_callBackPtr(); */
+	}
+
+}
+/* Interrupt Service Routine for timer1 compare mode */
+ISR(TIMER1_COMPB_vect){
+	if(g_callBackPtr != NULL_PTR)
+	{
+		/* Call the Call Back function in the application after the edge is detected */
+		(*g_callBackPtr)(); /* another method to call the function using pointer to function g_callBackPtr(); */
+	}
+
+}
+
+
+/*******************************************************************************
+ *                      Functions Definitions                                  *
+ *******************************************************************************/
+
+/*
+ * Description :
+ * Functional responsible for Initialize the Timer1 device by:
+ * 1. Setup the initial value and the prescalar.
+ * 2. Setup the timer mode
+ * 3. Enable interrput
+ */
+void Timer1_init(const Timer1_ConfigType * Config_Ptr){
+	TCNT1 = Config_Ptr->initial_value;
+	TCCR1B = (Config_Ptr->prescaler) | ((Config_Ptr->mode<<1)&0x08);
+	TCCR1A |=(1<<COM1A1) ;
+
+#if (PWM == FALSE)
+	/* non pwm mode*/
+	TCCR1A = (1<<FOC1A);
+	TCCR1A = (1<<FOC1B);
+#endif
+	if (Config_Ptr->mode==CTC){
+		#if (CTC_MODE == CTC_A)
+		OCR1A=Config_Ptr->compare_value;
+		/*Enable Timer1 Compare A Interrupt*/
+		TIMSK |= (1<<OCIE1A);
+		#endif
+		#if (CTC_MODE == CTC_B)
+		OCR1B=Config_Ptr->compare_value;
+		/*Enable Timer1 Compare A Interrupt*/
+		TIMSK |= (1<<OCIE1B);
+		#endif
+	}
+	else if(Config_Ptr->mode==NORMAL){
+		TIMSK|=(1<< TOIE1);
+	}
+}
+/*
+ * Description :
+ * Functional responsible for Deinitialize the Timer1
+ * by setting all registers to zero
+ */
+void Timer1_deInit(void){
+	TCNT1=0;
+	OCR1A=0;
+	OCR1B=0;
+	TCCR1A=0;
+	TCCR1B=0;
+	TIMSK=0;
+	g_callBackPtr = NULL_PTR;
+}
+/*
+ * Description :
+ * Save the address of the Call back function in a global variable
+ */
+
+void Timer1_setCallBack(void(*a_ptr)(void)){
+	g_callBackPtr = a_ptr;
+}
+
+
