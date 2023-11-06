@@ -1,5 +1,6 @@
 # Door-Locker-Security-System 
 Final Project for the embedded system diploma by Mohamed tarek <br />
+Author: Habiba Alaa Mohamed <br />
 Developing a door locker security system using:<br />
 1- AVR ATmega32 Microcontroller with frequency 8MHZ <br />
 2- Drivers: GPIO, Keypad, LCD, Timer, UART, TWI->"I2C", EEPROM, Buzzer and DC-Motor.<br />
