@@ -18,7 +18,7 @@ void Buzzer_init(){
 	 * set up pin direction of the buzzer
 	 * set it off initially
 	*/
-	GPIO_setupPinDirection(BUZZER_PORT, BUZZER_PIN, PIN_INPUT);
+	GPIO_setupPinDirection(BUZZER_PORT, BUZZER_PIN, PIN_OUTPUT);
 	GPIO_writePin(BUZZER_PORT, BUZZER_PIN, LOGIC_LOW);
 
 }
